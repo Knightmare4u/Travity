@@ -1,5 +1,6 @@
 package com.example.team20.travity;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.support.v4.content.ContextCompat;
@@ -25,8 +26,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        //Set up the Pilgrim Notification Handler
-          final PilgrimNotificationHandler pilgrimNotificationHandler = new PilgrimNotificationHandler() {
+        final PilgrimNotificationHandler pilgrimNotificationHandler = new PilgrimNotificationHandler() {
             // Primary visit handler
             @Override
             public void handleVisit(Context context, PilgrimSdkVisitNotification notification) {
@@ -57,8 +57,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         };
-        /*Starting the Pilgrim*/
-        PilgrimSdk.start(this);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         PilgrimSdk.Builder builder = new PilgrimSdk.Builder(this)
@@ -67,11 +65,14 @@ public class MainActivity extends AppCompatActivity {
                 .logLevel(LogLevel.DEBUG);
         PilgrimSdk.with(builder);
 
+
+        PilgrimSdk.start(this);
+
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    Result<CurrentLocation, Exception> currentLocationResult = PilgrimSdk.get().getCurrentLocation();
+                    @SuppressLint("MissingPermission") Result<CurrentLocation, Exception> currentLocationResult = PilgrimSdk.get().getCurrentLocation();
                     if (currentLocationResult.isOk()) {
                         CurrentLocation currentLocation = currentLocationResult.getResult();
                         Log.d("PilgrimSdk", "Currently at " + currentLocation.getCurrentPlace().toString() + " and inside " + currentLocation.getMatchedGeofences().size() + " geofence(s)");
@@ -82,5 +83,4 @@ public class MainActivity extends AppCompatActivity {
             }).start();
         }
     }
-
-    }
+}
