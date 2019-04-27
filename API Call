@@ -1,0 +1,86 @@
+package com.example.team20.travity;
+
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.util.Log;
+
+import com.foursquare.api.types.Venue;
+import com.foursquare.api.types.geofence.GeofenceEvent;
+import com.foursquare.pilgrim.CurrentLocation;
+import com.foursquare.pilgrim.LogLevel;
+import com.foursquare.pilgrim.PilgrimNotificationHandler;
+import com.foursquare.pilgrim.PilgrimSdk;
+import com.foursquare.pilgrim.PilgrimSdkBackfillNotification;
+import com.foursquare.pilgrim.PilgrimSdkGeofenceEventNotification;
+import com.foursquare.pilgrim.PilgrimSdkVisitNotification;
+import com.foursquare.pilgrim.Result;
+import com.foursquare.pilgrim.Visit;
+
+import java.util.List;
+
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        //Set up the Pilgrim Notification Handler
+          final PilgrimNotificationHandler pilgrimNotificationHandler = new PilgrimNotificationHandler() {
+            // Primary visit handler
+            @Override
+            public void handleVisit(Context context, PilgrimSdkVisitNotification notification) {
+                // Process the visit however you'd like:
+                Visit visit = notification.getVisit();
+                Venue venue = visit.getVenue();
+                Log.d("PilgrimSdk", visit.toString());
+            }
+
+            // Optional: If visit occurred while in Doze mode or without network connectivity
+            @Override
+            public void handleBackfillVisit(Context context, PilgrimSdkBackfillNotification notification) {
+                // Process the visit however you'd like:
+                super.handleBackfillVisit(context, notification);
+                Visit visit = notification.getVisit();
+                Venue venue = visit.getVenue();
+                Log.d("PilgrimSdk", visit.toString());
+
+            }
+
+            // Optional: If visit occurred by triggering a geofence
+            @Override
+            public void handleGeofenceEventNotification(Context context, PilgrimSdkGeofenceEventNotification notification) {
+                // Process the geofence events however you'd like:
+                List<GeofenceEvent> geofenceEvents = notification.getGeofenceEvents();
+                for (GeofenceEvent geofenceEvent : geofenceEvents) {
+                    Log.d("PilgrimSdk", geofenceEvent.toString());
+                }
+            }
+        };
+        /*Starting the Pilgrim*/
+        PilgrimSdk.start(this);
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        PilgrimSdk.Builder builder = new PilgrimSdk.Builder(this)
+                .consumer("XS3PHFGBC2T4LDOX4YADSYXNDHPD05BAAUR5R3H3SNDAWKDZ", "P3RYCOKNST2Q2LQOA1Q1MGTDNBRNNBAQJW4OGFM2IQVSFHC3")
+                .notificationHandler(pilgrimNotificationHandler)
+                .logLevel(LogLevel.DEBUG);
+        PilgrimSdk.with(builder);
+
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Result<CurrentLocation, Exception> currentLocationResult = PilgrimSdk.get().getCurrentLocation();
+                    if (currentLocationResult.isOk()) {
+                        CurrentLocation currentLocation = currentLocationResult.getResult();
+                        Log.d("PilgrimSdk", "Currently at " + currentLocation.getCurrentPlace().toString() + " and inside " + currentLocation.getMatchedGeofences().size() + " geofence(s)");
+                    } else {
+                        Log.e("PilgrimSdk", currentLocationResult.getErr().getMessage(), currentLocationResult.getErr());
+                    }
+                }
+            }).start();
+        }
+    }
+
+    }
